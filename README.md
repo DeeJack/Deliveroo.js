@@ -13,3 +13,4 @@ Forked by [Lorenzo Fumi](https://github.com/DeeJack) to add the option to pause 
 ### Version 1.6.3
 
 - Added option to pause the game by pressing ESC
+- Slow down clock while the game is running

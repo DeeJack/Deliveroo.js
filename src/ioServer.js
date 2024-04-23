@@ -287,6 +287,13 @@ io.on('connection', (socket) => {
         console.log(message);
         socket.emit('logMessage', { message: message });
     });
+
+    socket.on('slow', (value) => {
+        if (!value || isNaN(value) || value < 0)
+            return;
+        console.log('The game is being slowed down to', value)
+        myClock.base = Number(value);
+    })
 });
 
 

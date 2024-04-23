@@ -975,6 +975,12 @@ document.onkeydown = function(evt) {
             // console.log('Game paused: ', isGamePaused)
             // document.getElementById('gamePaused').textContent = `Game paused: ${isGamePaused}`
             break;
+        case 'Enter':
+            let value = document.getElementById('speed').value;
+            if (!value || isNaN(value) || value < 0)
+                return;
+            socket.emit('slow', value);
+
         default:
             break;
     }
