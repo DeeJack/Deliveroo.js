@@ -7,6 +7,7 @@ import { default as EventEmitter } from 'events';
 
 
 const scene = new THREE.Scene();
+let isGamePaused = false;
 
 // const camera = new THREE.OrthographicCamera( -100, 100, 10, -10, 1, 100 );
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 300 );
@@ -890,6 +891,7 @@ document.onkeydown = function(evt) {
         // do the rest of this function and then call start_doing
         setTimeout( start_doing );
     }
+    console.log(evt.code)
     switch (evt.code) {
         case 'KeyQ':// Q pickup
             action = () => {
@@ -962,6 +964,13 @@ document.onkeydown = function(evt) {
                     } );
                 } );
             };
+            break;
+        case 'Escape': // ESC
+            // Pause the game
+            isGamePaused = !isGamePaused;
+            socket.emit('pause', () => {})
+            console.log('Game paused: ', isGamePaused)
+            document.getElementById('gamePaused').textContent = `Game paused: ${isGamePaused}`
             break;
         default:
             break;
