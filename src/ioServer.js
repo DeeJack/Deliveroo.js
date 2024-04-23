@@ -294,6 +294,11 @@ io.on('connection', (socket) => {
         console.log('The game is being slowed down to', value)
         myClock.base = Number(value);
     })
+
+    socket.on('parcelDecay', (value) => {
+        console.log('new parcel decay interval', value)
+        process.env.PARCEL_DECADING_INTERVAL = value
+    })
 });
 
 

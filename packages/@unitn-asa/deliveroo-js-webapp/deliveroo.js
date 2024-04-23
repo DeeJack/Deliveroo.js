@@ -986,6 +986,10 @@ document.onkeydown = function(evt) {
     }
 };
 
+document.getElementById('parcelDecay').addEventListener('change', () => {
+    let value = document.getElementById('parcelDecay').value;
+    socket.emit('parcelDecay', value);
+})
 
 
 

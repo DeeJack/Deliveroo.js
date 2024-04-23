@@ -18,7 +18,7 @@ const config = {
     RANDOMLY_MOVING_AGENTS: 2,  // default is 2
     RANDOM_AGENT_SPEED: '2s',   // options are '1s', '2s' (DEFAULT), '5s', '10s'
 
-    CLOCK: 450,  // default is 50 (50ms are 20frame/s)
+    CLOCK: 50,  // default is 50 (50ms are 20frame/s)
 
 }
 
