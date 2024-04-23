@@ -284,7 +284,7 @@ io.on('connection', (socket) => {
 
     socket.on('logMessage', (message) => {
         console.log(message);
-        s.emit('logMessage', { message: message });
+        socket.emit('logMessage', { message: message });
     });
 });
 
