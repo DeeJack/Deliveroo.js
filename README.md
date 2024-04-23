@@ -6,18 +6,4 @@ Marco Robol - marco.robol@unitn.it
 
 University of Trento - 2022/2023
 
-# Changelog
-
-### v1.5 (27/03/2023)
-
-`$ node index.js level_1`
-
-- config.js
-- /levels
-    - level_1
-    - level_2
-    - level_3
-    - /maps
-        - default_map
-        - empty_map
-        - map_20
+Forked by [Lorenzo Fumi](https://github.com/DeeJack) to add the option to pause the game and facilitate the DEBUG of the agent.
