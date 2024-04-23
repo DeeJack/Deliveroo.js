@@ -277,9 +277,10 @@ io.on('connection', (socket) => {
         // socket.broadcast.emit( 'draw', {src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name}, bufferPng );
     });
 
-    socket.on('pause', () => {
+    socket.on('pause', (callback) => {
         console.log('The game is being paused')
         myClock.togglePause();
+        callback(myClock.isPaused());
     });
 
     socket.on('logMessage', (message) => {

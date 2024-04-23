@@ -891,7 +891,7 @@ document.onkeydown = function(evt) {
         // do the rest of this function and then call start_doing
         setTimeout( start_doing );
     }
-    console.log(evt.code)
+    // console.log(evt.code)
     switch (evt.code) {
         case 'KeyQ':// Q pickup
             action = () => {
@@ -967,10 +967,13 @@ document.onkeydown = function(evt) {
             break;
         case 'Escape': // ESC
             // Pause the game
-            isGamePaused = !isGamePaused;
-            socket.emit('pause', () => {})
-            console.log('Game paused: ', isGamePaused)
-            document.getElementById('gamePaused').textContent = `Game paused: ${isGamePaused}`
+            // isGamePaused = !isGamePaused;
+            socket.emit('pause', (paused) => {
+                console.log('Game paused: ', paused)
+                document.getElementById('gamePaused').textContent = `Game paused: ${paused}`
+            })
+            // console.log('Game paused: ', isGamePaused)
+            // document.getElementById('gamePaused').textContent = `Game paused: ${isGamePaused}`
             break;
         default:
             break;
