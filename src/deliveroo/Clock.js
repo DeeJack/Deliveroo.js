@@ -13,6 +13,7 @@ class Clock extends Observable {
     #id;
     #ms = 0;
     #isSynch = false;
+    #isPaused = false;
     
     constructor () {
         super();
@@ -58,6 +59,18 @@ class Clock extends Observable {
         
         return this.#ms;
 
+    }
+
+    isPaused () {
+        return this.#isPaused;
+    }
+
+    togglePause () {
+        this.#isPaused = !this.#isPaused;
+        if ( this.#isPaused )
+            this.stop();
+        else
+            this.start();
     }
 
 }

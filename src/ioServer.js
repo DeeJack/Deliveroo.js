@@ -6,76 +6,78 @@ const myClock = require('./deliveroo/Clock');
 
 
 
-const myAuthenticator = new Authentication( myGrid )
+const myAuthenticator = new Authentication(myGrid)
 
-const io = new Server( {
+const io = new Server({
     cors: {
         origin: "*", // http://localhost:3000",
         methods: ["GET", "POST"]
     }
-} );
+});
 
 
 
 io.on('connection', (socket) => {
-    
+
 
 
     /**
      * Authenticate socket on agent
      */
     const me = myAuthenticator.authenticate(socket);
-    if ( !me ) return;
-    socket.broadcast.emit( 'hi ', socket.id, me.id, me.name );
+    if (!me) return;
+    socket.broadcast.emit('hi ', socket.id, me.id, me.name);
 
 
 
     /**
      * Config
      */
-    if ( me.name == 'god' ) { // 'god' mod
+    if (me.name == 'god') { // 'god' mod
         me.config.PARCELS_OBSERVATION_DISTANCE = 'infinite'
         me.config.AGENTS_OBSERVATION_DISTANCE = 'infinite'
     }
-    socket.emit( 'config', me.config )
+    socket.emit('config', me.config)
 
-    
+
 
     /**
      * Emit map (tiles)
      */
-    myGrid.on( 'tile', ({x, y, delivery, blocked, parcelSpawner}) => {
+    myGrid.on('tile', ({ x, y, delivery, blocked, parcelSpawner }) => {
+        if (myClock.isPaused()) return;
         // console.log( 'emit tile', x, y, delivery, parcelSpawner );
         if (!blocked)
-            socket.emit( 'tile', x, y, delivery, parcelSpawner );
+            socket.emit('tile', x, y, delivery, parcelSpawner);
         else
-            socket.emit( 'not_tile', x, y );
-    } );
+            socket.emit('not_tile', x, y);
+    });
     let tiles = []
-    for (const {x, y, delivery, blocked, parcelSpawner} of myGrid.getTiles()) {
-        if ( !blocked ) {
-            socket.emit( 'tile', x, y, delivery, parcelSpawner )
-            tiles.push( {x, y, delivery, parcelSpawner} )
+    for (const { x, y, delivery, blocked, parcelSpawner } of myGrid.getTiles()) {
+        if (!blocked) {
+            socket.emit('tile', x, y, delivery, parcelSpawner)
+            tiles.push({ x, y, delivery, parcelSpawner })
         } else
-            socket.emit( 'not_tile', x, y );
+            socket.emit('not_tile', x, y);
     }
-    let {width, height} = myGrid.getMapSize()
-    socket.emit( 'map', width, height, tiles )
-    
+    let { width, height } = myGrid.getMapSize()
+    socket.emit('map', width, height, tiles)
 
-    
+
+
     /**
      * Emit me
      */
 
     // Emit you
-    me.on( 'agent', ({id, name, x, y, score}) => {
+    me.on('agent', ({ id, name, x, y, score }) => {
+        if (myClock.isPaused()) return;
         // console.log( 'emit you', id, name, x, y, score );
-        socket.emit( 'you', {id, name, x, y, score} );
-    } );
+        socket.emit('you', { id, name, x, y, score });
+    });
     // console.log( 'emit you', id, name, x, y, score );
-    socket.emit( 'you', {id, name, x, y, score} = me );
-    
+    socket.emit('you', { id, name, x, y, score } = me);
+
 
 
     /**
@@ -83,47 +85,52 @@ io.on('connection', (socket) => {
      */
 
     // Parcels
-    me.on( 'parcels sensing', (parcels) => {
+    me.on('parcels sensing', (parcels) => {
+        if (myClock.isPaused()) return;
         // console.log('emit parcels sensing', ...parcels);
-        socket.emit('parcels sensing', parcels )
-    } );
+        socket.emit('parcels sensing', parcels)
+    });
     me.emitParcelSensing();
 
     // Agents
-    me.on( 'agents sensing', (agents) => {
+    me.on('agents sensing', (agents) => {
+        if (myClock.isPaused()) return;
         // console.log('emit agents sensing', ...agents); // {id, name, x, y, score}
-        socket.emit( 'agents sensing', agents );
-    } );
+        socket.emit('agents sensing', agents);
+    });
     me.emitAgentSensing();
-    
+
 
 
     /**
      * Actions
      */
-    
+
     socket.on('move', async (direction, acknowledgementCallback) => {
+        if (myClock.isPaused()) return;
         // console.log(me.id, me.x, me.y, direction);
         try {
             const moving = me[direction]();
-            if ( acknowledgementCallback )
-                acknowledgementCallback( await moving ); //.bind(me)()
+            if (acknowledgementCallback)
+                acknowledgementCallback(await moving); //.bind(me)()
         } catch (error) { console.error(direction, 'is not a method of agent'); console.error(error) }
     });
 
     socket.on('pickup', async (acknowledgementCallback) => {
+        if (myClock.isPaused()) return;
         const picked = await me.pickUp()
-        if ( acknowledgementCallback )
+        if (acknowledgementCallback)
             try {
-                acknowledgementCallback( picked )
+                acknowledgementCallback(picked)
             } catch (error) { console.error(error) }
     });
 
     socket.on('putdown', async (selected, acknowledgementCallback) => {
-        const dropped = await me.putDown( selected )
-        if ( acknowledgementCallback )
+        if (myClock.isPaused()) return;
+        const dropped = await me.putDown(selected)
+        if (acknowledgementCallback)
             try {
-                acknowledgementCallback( dropped )
+                acknowledgementCallback(dropped)
             } catch (error) { console.error(error) }
     });
 
@@ -133,116 +140,121 @@ io.on('connection', (socket) => {
      * Communication
      */
 
-    socket.on( 'say', (toId, msg, acknowledgementCallback) => {
-        
-        console.log( me.id, me.name, 'say ', toId, msg );
+    socket.on('say', (toId, msg, acknowledgementCallback) => {
+        if (myClock.isPaused()) return;
 
-        for ( let socket of myAuthenticator.getSockets( toId )() ) {
-            
+        console.log(me.id, me.name, 'say ', toId, msg);
+
+        for (let socket of myAuthenticator.getSockets(toId)()) {
+
             // console.log( me.id, me.name, 'emit \'msg\' on socket', socket.id, msg );
-            socket.emit( 'msg', me.id, me.name, msg );
+            socket.emit('msg', me.id, me.name, msg);
 
         }
 
         try {
-            if (acknowledgementCallback) acknowledgementCallback( 'successful' )
-        } catch (error) { console.log( me.id, 'acknowledgement of \'say\' not possible' ) }
+            if (acknowledgementCallback) acknowledgementCallback('successful')
+        } catch (error) { console.log(me.id, 'acknowledgement of \'say\' not possible') }
 
-    } )
+    })
 
-    socket.on( 'ask', (toId, msg, replyCallback) => {
-        console.log( me.id, me.name, 'ask', toId, msg );
+    socket.on('ask', (toId, msg, replyCallback) => {
+        if (myClock.isPaused()) return;
+        console.log(me.id, me.name, 'ask', toId, msg);
 
-        for ( let socket of myAuthenticator.getSockets( toId )() ) {
-            
+        for (let socket of myAuthenticator.getSockets(toId)()) {
+
             // console.log( me.id, 'socket', socket.id, 'emit msg', ...args );
-            socket.emit( 'msg', me.id, me.name, msg, (reply) => {
+            socket.emit('msg', me.id, me.name, msg, (reply) => {
 
                 try {
-                    console.log( toId, 'replied', reply );
-                    replyCallback( reply )
-                } catch (error) { console.log( me.id, 'error while trying to acknowledge reply' ) }
+                    console.log(toId, 'replied', reply);
+                    replyCallback(reply)
+                } catch (error) { console.log(me.id, 'error while trying to acknowledge reply') }
 
-            } );
+            });
 
         }
 
-    } )
+    })
 
-    socket.on( 'shout', (msg, acknowledgementCallback) => {
+    socket.on('shout', (msg, acknowledgementCallback) => {
+        if (myClock.isPaused()) return;
 
-        console.log( me.id, me.name, 'shout', msg );
+        console.log(me.id, me.name, 'shout', msg);
 
-        socket.broadcast.emit( 'msg', me.id, me.name, msg );
+        socket.broadcast.emit('msg', me.id, me.name, msg);
 
         try {
-            if (acknowledgementCallback) acknowledgementCallback( 'successful' )
-        } catch (error) { console.log( me.id, 'acknowledgement of \'shout\' not possible' ) }
-        
-    } )
+            if (acknowledgementCallback) acknowledgementCallback('successful')
+        } catch (error) { console.log(me.id, 'acknowledgement of \'shout\' not possible') }
+
+    })
 
 
-    
+
     /**
      * Path
      */
-    
-    socket.on( 'path', ( path ) => {
-        
-        for ( let s of myAuthenticator.getSockets( me.id )() ) {
 
-            if ( s == socket )
+    socket.on('path', (path) => {
+        if (myClock.isPaused()) return;
+
+        for (let s of myAuthenticator.getSockets(me.id)()) {
+
+            if (s == socket)
                 continue;
-            
-            s.emit( 'path', path );
+
+            s.emit('path', path);
 
         }
 
-    } )
+    })
 
 
-    
+
     /**
      * Bradcast client log
      */
-    socket.on( 'log', ( ...message ) => {
-        socket.broadcast.emit( 'log', {src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name}, ...message )
-    } )
+    socket.on('log', (...message) => {
+        if (myClock.isPaused()) return;
+        socket.broadcast.emit('log', { src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name }, ...message)
+    })
 
 
 
     /**
      * GOD mod
      */
-    if ( me.name == 'god' ) {
+    if (me.name == 'god') {
 
-        socket.on( 'create parcel', async (x, y) => {
-            console.log( 'create parcel', x, y )
+        socket.on('create parcel', async (x, y) => {
+            console.log('create parcel', x, y)
             myGrid.createParcel(x, y)
-        } );
+        });
 
-        socket.on( 'dispose parcel', async (x, y) => {
-            console.log( 'dispose parcel', x, y )
-            let parcels = Array.from(myGrid.getParcels()).filter( p => p.x == x && p.y == y );
-            for ( p of parcels)
-                myGrid.deleteParcel( p.id )
-            myGrid.emit( 'parcel' );
-        } );
+        socket.on('dispose parcel', async (x, y) => {
+            console.log('dispose parcel', x, y)
+            let parcels = Array.from(myGrid.getParcels()).filter(p => p.x == x && p.y == y);
+            for (p of parcels)
+                myGrid.deleteParcel(p.id)
+            myGrid.emit('parcel');
+        });
 
-        socket.on( 'tile', async (x, y) => {
-            console.log( 'create/dispose tile', x, y )
+        socket.on('tile', async (x, y) => {
+            console.log('create/dispose tile', x, y)
             let tile = myGrid.getTile(x, y)
-            
-            if ( !tile ) return;
 
-            if ( tile.blocked ) {
+            if (!tile) return;
+
+            if (tile.blocked) {
                 tile.delivery = false;
                 tile.parcelSpawner = true;
                 tile.unblock();
-            } else if ( tile.parcelSpawner ) {
+            } else if (tile.parcelSpawner) {
                 tile.delivery = true;
                 tile.parcelSpawner = false;
-            } else if ( tile.delivery ) {
+            } else if (tile.delivery) {
                 tile.delivery = false;
                 tile.parcelSpawner = false;
             } else {
@@ -250,20 +262,30 @@ io.on('connection', (socket) => {
                 tile.parcelSpawner = false;
                 tile.block();
             }
-        } );
+        });
 
     }
 
-    socket.on( 'draw', async (bufferPng) => {
+    socket.on('draw', async (bufferPng) => {
+        if (myClock.isPaused()) return;
         // console.log( 'draw' );
-        for ( let s of myAuthenticator.getSockets( me.id )() ) {
-            if ( s == socket )
+        for (let s of myAuthenticator.getSockets(me.id)()) {
+            if (s == socket)
                 continue;
-            s.emit( 'draw', {src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name}, bufferPng );
+            s.emit('draw', { src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name }, bufferPng);
         }
         // socket.broadcast.emit( 'draw', {src: 'client', timestamp: myClock.ms, socket: socket.id, id: me.id, name: me.name}, bufferPng );
-    } );
+    });
 
+    socket.on('pause', () => {
+        console.log('The game is being paused')
+        myClock.togglePause();
+    });
+
+    socket.on('logMessage', (message) => {
+        console.log(message);
+        s.emit('logMessage', { message: message });
+    });
 });
 
 
@@ -272,9 +294,9 @@ io.on('connection', (socket) => {
  * Bradcast server log
  */
 const oldLog = console.log;
-console.log = function ( ...message ) {
-    io.emit( 'log', {src: 'server', timestamp: myClock.ms}, ...message );
-    oldLog.apply( console, message );
+console.log = function (...message) {
+    io.emit('log', { src: 'server', timestamp: myClock.ms }, ...message);
+    oldLog.apply(console, message);
 };
 
 

@@ -17,6 +17,8 @@ const PARCELS_MAX = process.env.PARCELS_MAX || config.PARCELS_MAX || 'infinite';
 module.exports = function (grid) {
     
     myClock.on( PARCELS_GENERATION_INTERVAL, () => {
+        if (myClock.isPaused()) return;
+        
         if ( grid.getParcelsQuantity() >= PARCELS_MAX ) {
             return;
         }
